@@ -62,9 +62,9 @@ def coarseness(arr):
             v_max_i = np.argmax(E_v[i,j])
 
             if h_max_v < v_max_v:
-                s_best = 2**v_max_v
+                s_best = 2**v_max_i
             else:
-                s_best = 2**h_max_v
+                s_best = 2**h_max_i
                 
             s_arr[i,j] = s_best
     
