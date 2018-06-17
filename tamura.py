@@ -1,21 +1,71 @@
+"""
+Module: tamura.py
+Author: Wilhelm Buchmueller
+
+This module implements the textural image features discovered by Tamura et al.
+The features should be computed only on greyscale images, but this module allows you to pass
+in three dimensional images, because we're extending the Tamura features according to
+Majtner et al.
+
+This module was developed with formal correctness in mind, as well as testability.
+Performance may be worse than existing python/MATLAB solutions, although numpy
+features were used where possible
+
+This module is released under the MIT License. If you're using this and it works out 
+for you please leave me a star under:
+    https://github.com/aiosin/tamura
+
+"""
+
 import numpy as np
-
-
-def checkarray(arr):
-    #TODO: implement
-    pass
+from scipy.stats import kurtosis
 
 
 
-def coarseness(arr):
+def checkarray( arr,logger=None) -> bool:
+    """
+    checkarray asserts wether the given input array is truly compatible for use with
+    the functions in this module
+
+    Args:
+        arr - greyscale two dimensional array of type `numpy.ndarray`
+    Returns:
+        `True` if array compatible
+        'False' if not
+    """
+    if 'float' in str(arr.dtype):
+        if logger is not None:
+            print('INFO: ndarray of type float was supplied to function ')
+
+    if len(arr.shape) != 2:
+        return False
+
+    if 0 < arr.min() or 0 < arr.max():
+        return False
+    
+    if 255 < arr.max() or 255 < arr.min():
+        return False
+
+    return True
+
+
+
+def coarseness(arr) -> float:
+    '''
+    Compute coarseness feature of an two dimensional greyscale image.
+    Args:
+        arr - greyscale two dimenaional array of type numpy.ndarray
+    
+    Returns:
+        res - result of coarseness computation of type float 
+    '''
     #parameter k affects "kernel size" used in computing averages etc.
     k = 5
-    #check if array is legal ie two or three dimensions, non comple
-    #TODO: implement three dimensional tamura features
-    #also this assertion line could be improved
-    assert len(arr.shape) == 2
+    #TODO: check formal correctness
 
-    #if possible cast to int
+    assert checkarray(arr) is True
+
+    #if possible cast to int, wouldnt want to deal with floats
     src_arr = np.array(arr,dtype='int')
 
     #initialize padding size
@@ -40,7 +90,7 @@ def coarseness(arr):
                 tmp[m-1] = acc_sum / 2**(2*m)
             l_avg_arr[i][j] = tmp
     
-    #pad avg arr
+    #TODO: figure out why I padded this array
     pad_l_avg_arr = np.pad(l_avg_arr,((pad_size,pad_size,),(pad_size,pad_size),(0,0)),'constant')
     #l_avg_arr contains now the averages 
     E_h = np.ones((src_arr.shape)+(k,),dtype='float')
@@ -78,23 +128,66 @@ def coarseness(arr):
     avg = np.mean(s_arr)
     return avg
 
-def tamura_3D(arr):
-    pass
+
+def coarseness_3D(arr)->float:
+    '''
+    extension of coarseness feature into three dimensions
+
+    Args:
+        arr - greyscale image with three dimensions
+    Returns:
+        res - result of coarseness computation in three dimensions of type float
+    '''
+    assert len(arr.shape) == 3
+    #TODO implement according to Majtner et. al.
+    return 0.
 
 
 def directionality(arr):
     pass
 
+def directionality_3D(arr):
+    pass
+
 def linelikeness(arr):
     pass
 
-def contrast(arr):
+def linelikeness_3D(arr):
     pass
 
-def main():
+
+def contrast(arr,n=0.25)-> float:
+    '''
+    calculate contrast according to Tamura et al.
+
+    Args:
+        arr     2D greyscale array
+
+        n       (optional) parameter for "weighing" the kurtosis
+                0.25 has been experimentally determined to be
+                the best performing parameter for this
+
+                Warning: 
+                Change the this parameter if you know what you're doing.
+                You may end up useless results by changing this parameter.
+
+    Returns:
+        res     Computed contrast of the image of type flaot
+    '''
+    assert checkarray(arr) is True
+    arr = np.array(arr, dtype='int')
+    
+    kurt = kurtosis(arr)
+    fcon = np.std(arr) / (kurt**n)
+
+
+def contrast_3D(arr)->float:
+    assert len(arr.shape) == 3
+    return 0.
+#
+if __name__ == '__main__':
     x = 99
     y = 123
     z = x*y 
     print(coarseness(np.arange(z).reshape((x,y))))
-if __name__ == '__main__':
-    main()
+    print(coarseness(np.ones((100,100))))
