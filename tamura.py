@@ -2,24 +2,27 @@
 Module: tamura.py
 Author: Wilhelm Buchmueller
 
+Tested with python3.6 > 
+
 This module implements the textural image features discovered by Tamura et al.
 The features should be computed only on greyscale images, but this module allows you to pass
 in three dimensional images, because we're extending the Tamura features according to
 Majtner et al.
 
-This module was developed with formal correctness in mind, as well as testability.
+This module was developed with formal correctness in mind, 
+self-documenting code, as well as testability.
 Performance may be worse than existing python/MATLAB solutions, although numpy
-features were used where possible
+features were used wherever possible.
 
 This module is released under the MIT License. If you're using this and it works out 
-for you please leave me a star under:
+for you please leave me a star at:
     https://github.com/aiosin/tamura
 
 """
 
 import numpy as np
 from scipy.stats import kurtosis
-
+from scipy.signal import convolve2d
 
 
 def checkarray( arr,logger=None) -> bool:
@@ -40,7 +43,7 @@ def checkarray( arr,logger=None) -> bool:
     if len(arr.shape) != 2:
         return False
 
-    if 0 < arr.min() or 0 < arr.max():
+    if 0 < arr.min() or 0 > arr.max():
         return False
     
     if 255 < arr.max() or 255 < arr.min():
@@ -143,8 +146,61 @@ def coarseness_3D(arr)->float:
     return 0.
 
 
-def directionality(arr):
-    pass
+def directionality(arr,n=16, t=12)->float:
+    '''
+    calculate the directionality according to Tamura et al.
+
+    Args:
+        arr     2D greyscale image
+
+        n       optional parameter for directionality
+                preset to 16
+                Tamura et al. recommend setting this value to 
+                Change at your own risk.
+        t       optional parameter for directionality
+                preset to 12
+                Tamura et al. recommend setting this value to 
+                Change at your own risk.
+    Returns:
+        res - result of coarseness computation in three dimensions of type float
+    '''
+    #assert checkarray(arr) == True
+
+    arr = np.array(arr, dtype='int')
+
+    h_op = np.array([[-1,0,-1],[-1,0,-1],[-1, 0, 1]])
+    v_op = np.array([[ 1,1, 1],[ 0,0, 0],[-1,-1,-1]])
+    '''vertical and horizontal operators $\Delta_H, \Delta_V$'''
+
+    pad_d_h = convolve2d(np.pad(arr,(1,1),'constant'),h_op)
+    pad_d_v = convolve2d(np.pad(arr,(1,1),'constant'),v_op)
+    
+    p_rows, p_cols = pad_d_v.shape
+
+    d_h = np.abs(pad_d_h[1:p_rows-1,1:p_cols-1])
+    d_v = np.abs(pad_d_v[1:p_rows-1,1:p_cols-1])
+    #not using magnitude to threshhold array for now
+    #IMPORTANT enable it for formal correctness
+    d_G = (( d_h +d_v )/2).flatten()
+    theta = np.arctan((d_v/d_h) + np.pi/2).flatten()
+
+    #TODO: catch error with n*2 indexing
+    H_D = np.zeros((n*2,))
+
+    for k in range(2*n):
+        lower_bound = k * np.pi /(2*n)
+        upper_bound = (k+1) * np.pi / (2*n)
+        n_theta = np.count_nonzero(np.logical_and(theta > lower_bound, theta < upper_bound))
+        H_D[k] = n_theta
+        
+    #sum all the occurences
+    w_H_D = np.sum(H_D)
+    #normalizing histogram with said sum
+    H_D /= w_H_D
+
+
+    return 
+
 
 def directionality_3D(arr):
     pass
@@ -161,7 +217,7 @@ def contrast(arr,n=0.25)-> float:
     calculate contrast according to Tamura et al.
 
     Args:
-        arr     2D greyscale array
+        arr     2D greyscale integer array
 
         n       (optional) parameter for "weighing" the kurtosis
                 0.25 has been experimentally determined to be
@@ -169,7 +225,7 @@ def contrast(arr,n=0.25)-> float:
 
                 Warning: 
                 Change the this parameter if you know what you're doing.
-                You may end up useless results by changing this parameter.
+                You may end up withuseless results by changing this parameter.
 
     Returns:
         res     Computed contrast of the image of type flaot
@@ -179,10 +235,38 @@ def contrast(arr,n=0.25)-> float:
     
     kurt = kurtosis(arr)
     fcon = np.std(arr) / (kurt**n)
+    return fcon
 
 
 def contrast_3D(arr)->float:
+    '''
+    calculate contrast in 3D according to Tamura et al.
+
+    Args:
+        arr     3D greyscale integer array
+
+        n       (optional) parameter for "weighing" the kurtosis
+                0.25 has been experimentally determined to be
+                the best performing parameter for this
+
+                Warning: 
+                Change the this parameter if you know what you're doing.
+                You may end up with useless results by changing this parameter.
+
+    Returns:
+        res     Computed contrast of the image of type flaot
+    '''
     assert len(arr.shape) == 3
+    arr = np.array(arr,dtype='int')
+    kurt = kurtosis(arr)
+    fcon = np.std(arr) / (kurt**n)
+    return fcon
+
+def roughness(arr, n=0.25)->float:
+    assert checkarray(arr) == True
+    return coarseness(arr)+ contrast(arr,n)
+
+def regularity()-> float:
     return 0.
 #
 if __name__ == '__main__':
