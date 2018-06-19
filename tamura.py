@@ -17,7 +17,7 @@ features were used wherever possible.
 This module is released under the MIT License. If you're using this and it works out 
 for you please leave me a star at:
     https://github.com/aiosin/tamura
-
+    
 """
 
 import numpy as np
@@ -164,7 +164,10 @@ def directionality(arr,n=16, t=12)->float:
     Returns:
         res - result of coarseness computation in three dimensions of type float
     '''
-    #assert checkarray(arr) == True
+    n_p = 0
+    r = 0
+
+    assert checkarray(arr) == True
 
     arr = np.array(arr, dtype='int')
 
@@ -198,8 +201,19 @@ def directionality(arr,n=16, t=12)->float:
     #normalizing histogram with said sum
     H_D /= w_H_D
 
+    #peak detection
+    #the approach which we aopted is to sum the second moments
+    #around each peak from valley to valley
+    #however no more than two peaks are detected
 
-    return 
+    
+
+    # F_d = None
+
+    # F_dir = 1 - r * F_d
+    return theta
+
+    #return F_dir
 
 
 def directionality_3D(arr):
@@ -238,7 +252,7 @@ def contrast(arr,n=0.25)-> float:
     return fcon
 
 
-def contrast_3D(arr)->float:
+def contrast_3D(arr,n)->float:
     '''
     calculate contrast in 3D according to Tamura et al.
 
