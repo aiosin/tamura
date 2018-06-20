@@ -202,6 +202,30 @@ def directionality(arr,n=16, t=12)->float:
     H_D /= w_H_D
 
     #peak detection
+    peaks = list()
+    #rudimentary approach
+    pv1,ip1 = 0
+    pv2,ip2 = 0
+    for i in range(len(H_D)):
+        if H_D[i] > pv1:
+            ip1 = i
+            pv1 = H_D[i]
+            peaks.append([ip1,pv1])
+    #reverse index to find other peak
+    for i in range(len(H_D))[::-1]:
+        if H_D[i] > pv1:
+            ip1 = i
+            pv1 = H_D[i]
+            peaks.append([ip2,pv2])
+    peaks = np.array(peaks)
+
+    #texture unidirectional if only 1 peak
+    if ip1 == ip2:
+        peaks = peaks[0:1]
+
+    #REMINDER case > 3 peaks not handled
+    #IDEA use thresholding to find correct number of peaks
+
     #the approach which we aopted is to sum the second moments
     #around each peak from valley to valley
     #however no more than two peaks are detected
