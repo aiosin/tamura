@@ -2,12 +2,12 @@
 Module: tamura.py
 Author: Wilhelm Buchmueller
 
-Tested with python3.6 > 
+Tested with python3.6 only
 
 This module implements the textural image features discovered by Tamura et al.
 The features should be computed only on greyscale images, but this module allows you to pass
-in three dimensional images, because we're extending the Tamura features according to
-Majtner et al.
+in three dimensional(i.e. volumetric, not primarily RGB) images, because we're extending 
+the Tamura features according to Majtner et al.
 
 This module was developed with formal correctness in mind, 
 self-documenting code, as well as testability.
@@ -21,7 +21,7 @@ for you please leave me a star at:
 """
 
 import numpy as np
-from scipy.stats import kurtosis
+from scipy.stats import kurtosis,moment
 from scipy.signal import convolve2d
 
 
@@ -203,20 +203,20 @@ def directionality(arr,n=16, t=12)->float:
 
     #peak detection
     peaks = list()
-    #rudimentary approach
-    pv1,ip1 = 0
-    pv2,ip2 = 0
+    #rudimentary approach 
+    pv1,ip1 = 0,0
+    pv2,ip2 = 0,0
     for i in range(len(H_D)):
         if H_D[i] > pv1:
             ip1 = i
             pv1 = H_D[i]
-            peaks.append([ip1,pv1])
+    peaks.append([ip1,pv1])
     #reverse index to find other peak
     for i in range(len(H_D))[::-1]:
         if H_D[i] > pv1:
             ip1 = i
             pv1 = H_D[i]
-            peaks.append([ip2,pv2])
+    peaks.append([ip2,pv2])
     peaks = np.array(peaks)
 
     #texture unidirectional if only 1 peak
@@ -225,19 +225,46 @@ def directionality(arr,n=16, t=12)->float:
 
     #REMINDER case > 3 peaks not handled
     #IDEA use thresholding to find correct number of peaks
+    #same stupid approach for valleys as peaks
+    valleys = list()
+    #rudimentary approach 
+    vv1,iv1 = 0,0
+    vv2,iv2 = 0,0
+    for i in range(len(H_D)):
+        if H_D[i] < vv1:
+            iv1 = i
+            vv1 = H_D[i]
+    peaks.append([iv1,vv1])
+    #reverse index to find other peak
+    for i in range(len(H_D))[::-1]:
+        if H_D[i] < vv2:
+            iv1 = i
+            vv1 = H_D[i]
+    valleys.append([iv2,vv2])
+    valleys = np.array(valleys )
 
-    #the approach which we aopted is to sum the second moments
+    #texture unidirectional if only 1 valley
+    if iv1 == iv2:
+        valleys = valleys[0:1]
+    #test valleys and peaks according to formula
+    #TODO
+    F_d = 0
+
+    #the approach which we adopted  is to sum the second moments
     #around each peak from valley to valley
     #however no more than two peaks are detected
+    #WARNING: 
+    if(len(peaks) == 2):
+        F_d += moment(H_D[0:iv1] ,  2)
+        F_d += moment(H_D[iv1:] ,  2)
 
-    
-
-    # F_d = None
+    #normalizing factor r:
+    pi1_2 = np.pi/2.0
+    r=1.0 / (pi1_2**2)
 
     # F_dir = 1 - r * F_d
-    return theta
-
-    #return F_dir
+    fdir = 1-r*F_d
+    return fdir
 
 
 def directionality_3D(arr):
