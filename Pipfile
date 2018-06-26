@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 numpy = "*"
 scipy = "*"
+scikit-image = "*"
 
 [dev-packages]
 pylint = "*"

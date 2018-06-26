@@ -274,7 +274,35 @@ def linelikeness(arr):
     pass
 
 def linelikeness_3D(arr):
-    pass
+    '''
+    calculate contrast according to Tamura et al.
+
+    Args:
+        arr     2D greyscale integer array
+
+        n       (optional) parameter for "weighing" the kurtosis
+                0.25 has been experimentally determined to be
+                the best performing parameter for this
+
+                Warning: 
+                Change the this parameter if you know what you're doing.
+                You may end up withuseless results by changing this parameter.
+
+    Returns:
+        res     Computed contrast of the image of type flaot
+    '''
+    assert checkarray(arr) is True
+    arr = np.array(arr, dtype='int')
+    weight = 0.
+    #for now use skimages implementation
+    #TODO: remove skimage dependency to cut down on dependencies
+    from skimage.feature import greycomatrix
+    # gcm = greycomatrix(arr)
+    weight = gcm
+
+
+    res = float(0)
+    return res
 
 
 def contrast(arr,n=0.25)-> float:
