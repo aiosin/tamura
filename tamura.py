@@ -4,10 +4,10 @@ Author: Wilhelm Buchmueller
 
 Tested with python3.6 only
 
-This module implements the textural image features discovered by Tamura et al.
+This module implements the most important textural image features discovered by Tamura et al.
 The features should be computed only on greyscale images, but this module allows you to pass
 in three dimensional(i.e. volumetric, not primarily RGB) images, because we're extending 
-the Tamura features according to Majtner et al.
+the Tamura features according to Majtner et al (WIP).
 
 This module was developed with formal correctness in mind, 
 self-documenting code, as well as testability.
@@ -51,19 +51,22 @@ def checkarray( arr,logger=None) -> bool:
 
     return True
 
+localvar = 0
 
-
-def coarseness(arr) -> float:
+def coarseness(arr,n_param=5) -> float:
     '''
     Compute coarseness feature of an two dimensional greyscale image.
+    WARNING: Supply an integer array or it will be casted for you
     Args:
-        arr - greyscale two dimenaional array of type numpy.ndarray
+        arr - greyscale two dimensional array of type numpy.ndarray with dtype ='int'
+        n_param - beighborhood parameter for calculating the max neighborhood averages
     
     Returns:
         res - result of coarseness computation of type float 
     '''
     #parameter k affects "kernel size" used in computing averages etc.
-    k = 5
+    #Tamura recommends leavint this at k = 5
+    k = n_param
     #TODO: check formal correctness
 
     assert checkarray(arr) is True
@@ -83,19 +86,18 @@ def coarseness(arr) -> float:
     for i in range(0,rows):
         for j in range(0,cols):
             tmp = np.zeros((k,),dtype='int')
-            #TODO: check correctness and nessecity of index shift (1,k+1)
             for m in range(1,k+1):
                 tmp_arr = pad_arr[pad_size+i-(2**(m-1)):pad_size+i+(2**(m-1)-1),
                                 pad_size+j-(2**(m-1)):pad_size+j+(2**(m-1)-1)]
                 acc_sum = np.sum(tmp_arr)
                 # reminder that 2^m * 2^m = 2^(2m)
-                # adjust index since our range is 1 k+1 and 
+                # adjust index since our range is 1 k+1
                 tmp[m-1] = acc_sum / 2**(2*m)
             l_avg_arr[i][j] = tmp
     
+    #l_avg_arr contains now the averages 
     #TODO: figure out why I padded this array
     pad_l_avg_arr = np.pad(l_avg_arr,((pad_size,pad_size,),(pad_size,pad_size),(0,0)),'constant')
-    #l_avg_arr contains now the averages 
     E_h = np.ones((src_arr.shape)+(k,),dtype='float')
     E_v = np.ones((src_arr.shape)+(k,),dtype='float')   
 
@@ -164,8 +166,6 @@ def directionality(arr,n=16, t=12)->float:
     Returns:
         res - result of coarseness computation in three dimensions of type float
     '''
-    n_p = 0
-    r = 0
 
     assert checkarray(arr) == True
 
@@ -183,13 +183,19 @@ def directionality(arr,n=16, t=12)->float:
     d_h = np.abs(pad_d_h[1:p_rows-1,1:p_cols-1])
     d_v = np.abs(pad_d_v[1:p_rows-1,1:p_cols-1])
     #not using magnitude to threshhold array for now
-    #IMPORTANT enable it for formal correctness
+    #IMPORTANT enable/calculate it for formal correctness
     d_G = (( d_h +d_v )/2).flatten()
     theta = np.arctan((d_v/d_h) + np.pi/2).flatten()
 
-    #TODO: catch error with n*2 indexing
-    H_D = np.zeros((n*2,))
+    #IMPORTANT were not using d_G for thresholding since it is clear from the paper 
+    #what the purpose of t is and to quote the authors:
+    # "HD was not sensitive to the value of t."
+    #I'm assuming were good to go by ignoring t thresholding
+    #should put "theta > t" in np.logical_and 
 
+    #see "Improving the Functionality of Tamura Directionality on Solar Images" by Ahmadzadeh et al.
+    #
+    H_D = np.zeros((n*2,))
     for k in range(2*n):
         lower_bound = k * np.pi /(2*n)
         upper_bound = (k+1) * np.pi / (2*n)
@@ -308,7 +314,7 @@ def linelikeness_3D(arr):
 def contrast(arr,n=0.25)-> float:
     '''
     calculate contrast according to Tamura et al.
-
+    WARNING: Supply a integer array or the given array will be casted
     Args:
         arr     2D greyscale integer array
 
@@ -347,7 +353,7 @@ def contrast_3D(arr,n)->float:
                 You may end up with useless results by changing this parameter.
 
     Returns:
-        res     Computed contrast of the image of type flaot
+        res     Computed contrast of the image of type float
     '''
     assert len(arr.shape) == 3
     arr = np.array(arr,dtype='int')
@@ -356,10 +362,35 @@ def contrast_3D(arr,n)->float:
     return fcon
 
 def roughness(arr, n=0.25)->float:
+        '''
+    calculate roughness according to Tamura et al.
+
+    Args:
+        arr     2D greyscale integer array
+
+        n       (optional) parameter for "weighing" the kurtosis
+                0.25 has been experimentally determined to be
+                the best performing parameter for this
+
+                Warning: 
+                Change the this parameter if you know what you're doing.
+                You may end up with useless results by changing this parameter.
+
+    Returns:
+        res     Computed roughness of the image of type float
+    '''
     assert checkarray(arr) == True
     return coarseness(arr)+ contrast(arr,n)
 
+def roughness3d (arr, n=0.25) ->float:
+    return coarseness_3D(arr) + contrast_3D(arr, n)
+
+
 def regularity()-> float:
+    """
+    regularity
+    NOT IMPLEMENTED
+    """
     return 0.
 #
 if __name__ == '__main__':
