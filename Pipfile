@@ -5,8 +5,11 @@ name = "pypi"
 
 [packages]
 numpy = "*"
+scipy = "*"
+scikit-image = "*"
 
 [dev-packages]
+pylint = "*"
 
 [requires]
 python_version = "3.6"
